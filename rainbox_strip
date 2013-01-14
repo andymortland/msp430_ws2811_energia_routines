@@ -1,0 +1,102 @@
+#include <WS2811Driver.h>
+
+#define NUM_LEDS 60
+#define NUM_CHANNELS 3 * NUM_LEDS
+
+byte leds[NUM_CHANNELS];
+WS2811Driver ledStrip; // uses P1_7 as datapin connect to DIN on strip
+
+int counter = 0;
+int ihue = 0;        //-HUE (0-360)
+int ibright = 0;     //-BRIGHTNESS (0-255)
+int isat = 0;        //-SATURATION (0-255)
+
+void setup(void)
+{
+  ledStrip.setLEDCount(NUM_LEDS); // setup for 60 leds on a strip
+  ledStrip.begin();   // configure P1.7 for output
+  for (byte x = 0 ; x < NUM_CHANNELS ; x++){
+    leds[x] = 0;
+  }
+}
+
+void loop() {
+
+  rainbow_fade(90);
+}
+
+void set_color_led(int index, int cred, int cgrn, int cblu) {  
+  int offsetPos = (3*index);
+
+  leds[(offsetPos + 0)] = cred;
+  leds[(offsetPos + 1)] = cgrn;
+  leds[(offsetPos + 2)] = cblu;  
+}
+
+
+void rainbow_fade(int idelay) { //-FADE ALL LEDS THROUGH HSV RAINBOW
+  ihue++;
+  if (ihue >= 359) {
+    ihue = 0;
+  }
+  int thisColor[3];
+  HSVtoRGB(ihue, 255, 55, thisColor);
+  for(int idex = 0 ; idex < NUM_LEDS; idex++ ) {
+    set_color_led(idex,thisColor[0],thisColor[1],thisColor[2]); 
+  }
+  ledStrip.write(leds);			 // write to the LEDs
+  delay(50);  
+}
+
+//-CONVERT HSV VALUE TO RGB
+void HSVtoRGB(int hue, int sat, int val, int colors[3]) {
+  // hue: 0-359, sat: 0-255, val (lightness): 0-255
+  int r, g, b, base;
+
+  if (sat == 0) { // Achromatic color (gray).
+    colors[0]=val;
+    colors[1]=val;
+    colors[2]=val;
+  } 
+  else  {
+    base = ((255 - sat) * val)>>8;
+    switch(hue/60) {
+    case 0:
+      r = val;
+      g = (((val-base)*hue)/60)+base;
+      b = base;
+      break;
+    case 1:
+      r = (((val-base)*(60-(hue%60)))/60)+base;
+      g = val;
+      b = base;
+      break;
+    case 2:
+      r = base;
+      g = val;
+      b = (((val-base)*(hue%60))/60)+base;
+      break;
+    case 3:
+      r = base;
+      g = (((val-base)*(60-(hue%60)))/60)+base;
+      b = val;
+      break;
+    case 4:
+      r = (((val-base)*(hue%60))/60)+base;
+      g = base;
+      b = val;
+      break;
+    case 5:
+      r = val;
+      g = base;
+      b = (((val-base)*(60-(hue%60)))/60)+base;
+      break;
+    }
+    colors[0]=r;
+    colors[1]=g;
+    colors[2]=b;
+  }
+}
+
+
+
